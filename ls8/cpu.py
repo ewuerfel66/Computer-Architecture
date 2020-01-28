@@ -10,65 +10,42 @@ class CPU:
         # register - 256 bytes of memory & 8 general purpose registers
         self.pc = 0
         self.running = True
-        self.ram = {0: 0, 
-                    1: 0, 
-                    2: 0, 
-                    3: 0,
-                    4: 0, 
-                    5: 0, 
-                    6: 0, 
-                    7: 0}
-        self.register = {0: 0, 
-                         1: 0, 
-                         2: 0, 
-                         3: 0,
-                         4: 0, 
-                         5: 0, 
-                         6: 0, 
-                         7: 0}
+        self.ram = [0] * 256
+        self.reg = [0] * 8
 
-    def load(self):
+    def load(self, filename):
         """Load a program into memory."""
 
         address = 0
+        program = []
 
-        # For now, we've just hardcoded a program:
+        # Read each binary line into program
+        with open(filename) as f:
+            for line in f:
+                # Ignore comments
+                comment_split = line.split("#")
+                value = comment_split[0].strip()
 
-        program = [
-            # From print8.ls8
-            "10000010", # LDI R0,8
-            "00000000",
-            "00001000",
-            "01000111", # PRN R0
-            "00000000",
-            "00000001", # HLT
-        ]
+                # Ignore blank lines
+                if value == "":
+                    continue
+
+                program.append(value)
 
         for instruction in program:
-            self.ram[address] = instruction
+            self.ram_write(instruction, address)
             address += 1
 
     def binary_string_to_decimal(self, binary_string):
-        value = 0
-
-        # Add place values
-        value += int(binary_string[7])
-        value += int(binary_string[6]) * 2
-        value += int(binary_string[5]) * 4
-        value += int(binary_string[4]) * 8
-        value += int(binary_string[3]) * 16
-        value += int(binary_string[2]) * 32
-        value += int(binary_string[1]) * 64
-        value += int(binary_string[0]) * 128
-
-        return value
+        return int(binary_string, 2)
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -103,6 +80,12 @@ class CPU:
         Accepts a value and RAM address, then overwrites the value at that address
         """
         self.ram[address] = value
+
+    def reg_read(self, address):
+        return str(self.reg[address])
+
+    def reg_write(self, value, address):
+        self.reg[address] = value
 
     def run(self):
         """Run the CPU."""
@@ -159,7 +142,7 @@ class CPU:
                 value = self.binary_string_to_decimal(value_binary_string)
 
                 # Set register at address to specified value
-                self.register[register_address] = value
+                self.reg[register_address] = value
 
             # PRN
             elif ir[0] == "01000111":
@@ -169,5 +152,14 @@ class CPU:
                 # Convert vars to decimal value
                 register_address = self.binary_string_to_decimal(register_address_binary_string)
 
-                # Set register at address to specified value
-                print(self.register[register_address])
+                # Print value at register address
+                print(self.reg[register_address])
+
+            # MUL
+            elif ir[0] == "10100010":
+                # Get the register addresses
+                reg_a = self.binary_string_to_decimal(ir[1])
+                reg_b = self.binary_string_to_decimal(ir[2])
+
+                # Call ALU MUL function
+                self.alu("MUL", reg_a,reg_b)
