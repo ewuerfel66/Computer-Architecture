@@ -11,7 +11,7 @@ class CPU:
         self.pc = 0
         self.running = True
         self.ram = [0] * 256
-        self.reg = [0] * 8
+        self.reg = [0, 0, 0, 0, 0, 0, 0, 0xF4] 
 
     def load(self, filename):
         """Load a program into memory."""
@@ -82,7 +82,7 @@ class CPU:
         self.ram[address] = value
 
     def reg_read(self, address):
-        return str(self.reg[address])
+        return self.reg[address]
 
     def reg_write(self, value, address):
         self.reg[address] = value
@@ -122,7 +122,10 @@ class CPU:
                 # Change the PC
                 self.pc += 3
 
-            # Now everything for this operation is in ir
+            else:
+                print("INVALID COMMAND")
+
+            """Now everything for this operation is in ir"""
 
             # Execute Instructions
 
@@ -163,3 +166,48 @@ class CPU:
 
                 # Call ALU MUL function
                 self.alu("MUL", reg_a,reg_b)
+
+            # PUSH
+            elif ir[0] == "01000101":
+                # print("PUSH")
+                # print("")
+
+                # Get the value to push
+                register_address = int(self.binary_string_to_decimal(ir[1]))
+                value = self.reg[register_address]
+                # print(f"Value: {value}")
+                # print("")
+
+                # Decrement the SP
+                # print(f"SP: {self.reg[7]}")
+                self.reg[7] -= 1
+                # print(f"SP: {self.reg[7]}")
+                # print("")
+
+                # Send the value to the address in RAM
+                self.ram_write(value, self.reg[7])
+
+            # POP
+            elif ir[0] == "01000110":
+                # print("POP")
+                # print("")
+
+                # Get the value SP is pointing to from RAM
+                value = int(self.ram_read(self.reg[7]))
+                # print(f"Value: {value}")
+                # print("")
+                
+                # Get the register address to send it to
+                address = self.binary_string_to_decimal(ir[1])
+                
+                # Write the value into register[address]
+                self.reg_write(value, address)
+                
+                # Increment SP
+                # print(f"SP: {self.reg[7]}")
+                self.reg[7] += 1
+                # print(f"SP: {self.reg[7]}")
+                # print("")
+
+            else:
+                print("INVALID COMMAND")
