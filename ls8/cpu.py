@@ -81,12 +81,6 @@ class CPU:
         """
         self.ram[address] = value
 
-    def reg_read(self, address):
-        return self.reg[address]
-
-    def reg_write(self, value, address):
-        self.reg[address] = value
-
     def run(self):
         """Run the CPU."""
         # Run until it halts
@@ -127,6 +121,10 @@ class CPU:
 
             """Now everything for this operation is in ir"""
 
+            # print("")
+            # print(f"Command: {ir[0]}")
+            # print("")
+
             # Execute Instructions
 
             # HLT
@@ -158,6 +156,15 @@ class CPU:
                 # Print value at register address
                 print(self.reg[register_address])
 
+            # ADD
+            elif ir[0] == "10100000":
+                # Get the register addresses
+                reg_a = self.binary_string_to_decimal(ir[1])
+                reg_b = self.binary_string_to_decimal(ir[2])
+
+                # Call ALU MUL function
+                self.alu("ADD", reg_a,reg_b)
+
             # MUL
             elif ir[0] == "10100010":
                 # Get the register addresses
@@ -169,45 +176,55 @@ class CPU:
 
             # PUSH
             elif ir[0] == "01000101":
-                # print("PUSH")
-                # print("")
-
                 # Get the value to push
                 register_address = int(self.binary_string_to_decimal(ir[1]))
                 value = self.reg[register_address]
-                # print(f"Value: {value}")
-                # print("")
 
                 # Decrement the SP
-                # print(f"SP: {self.reg[7]}")
                 self.reg[7] -= 1
-                # print(f"SP: {self.reg[7]}")
-                # print("")
 
                 # Send the value to the address in RAM
                 self.ram_write(value, self.reg[7])
 
             # POP
             elif ir[0] == "01000110":
-                # print("POP")
-                # print("")
-
                 # Get the value SP is pointing to from RAM
                 value = int(self.ram_read(self.reg[7]))
-                # print(f"Value: {value}")
-                # print("")
                 
                 # Get the register address to send it to
                 address = self.binary_string_to_decimal(ir[1])
                 
                 # Write the value into register[address]
-                self.reg_write(value, address)
+                self.reg[address] = value
                 
                 # Increment SP
-                # print(f"SP: {self.reg[7]}")
                 self.reg[7] += 1
-                # print(f"SP: {self.reg[7]}")
-                # print("")
+
+            # CALL
+            elif ir[0] == "01010000":
+                # Push address of next command to stack
+                value = self.pc
+                # Decrement SP
+                self.reg[7] -= 1
+                # Send to Stack in RAM
+                self.ram_write(value, self.reg[7])
+
+                # Get the subroutine address
+                reg_address = self.binary_string_to_decimal(ir[1])
+                subroutine_address = self.reg[reg_address]
+
+                # Jump to that location in RAM
+                self.pc = subroutine_address
+
+            # RET
+            elif ir[0] == "00010001":
+                # Get the value SP is pointing to in RAM
+                value = int(self.ram_read(self.reg[7]))
+                # Set PC back to that address
+                self.pc = value
+
+                # Increment SP
+                self.reg[7] += 1
 
             else:
                 print("INVALID COMMAND")
