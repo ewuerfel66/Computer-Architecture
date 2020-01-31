@@ -87,7 +87,7 @@ while running:
         pc += 2
 
     elif command == PUSH:
-        reg = memory[pc +1]
+        reg = memory[pc + 1]
         value = registers[reg]
         # Decrement the SP
         register[sp] -= 1
@@ -104,6 +104,27 @@ while running:
         registers[sp] += 1
         # Increment PC by 1
         pc += 1
+
+    elif command == CALL:
+        # Address of next instruction pushed to stack
+        value = pc + 2
+        registers[sp] -= 1
+        memory[registers[sp]] = value
+
+        # PC is set to the address stored in the given register
+        reg = memory[pc + 1]
+        subroutine_address = registers[reg]
+
+        # Jump to that location in RAM and execute instructions of subroutine
+        pc = subroutine_address
+
+    elif command == RET:
+        # Pop value from stack
+        return_address = registers[sp]
+        pc = memory[return_address]
+
+        # Increment SP
+        registers[sp] += 1
 ​
     else:
         print(f"Error: Unknown command: {command}")

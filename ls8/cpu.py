@@ -11,7 +11,8 @@ class CPU:
         self.pc = 0
         self.running = True
         self.ram = [0] * 256
-        self.reg = [0, 0, 0, 0, 0, 0, 0, 0xF4] 
+        self.reg = [0, 0, 0, 0, 0, 0, 0, 0xF4]
+        self.fl = [0] * 8
 
     def load(self, filename):
         """Load a program into memory."""
@@ -46,6 +47,16 @@ class CPU:
             self.reg[reg_a] += self.reg[reg_b]
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == "CMP":
+            # Equal
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.fl[7] = 1
+            # Less than
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.fl[5] = 1
+            # Greater than
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.fl[6] = 1
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -163,7 +174,7 @@ class CPU:
                 reg_b = self.binary_string_to_decimal(ir[2])
 
                 # Call ALU MUL function
-                self.alu("ADD", reg_a,reg_b)
+                self.alu("ADD", reg_a, reg_b)
 
             # MUL
             elif ir[0] == "10100010":
@@ -225,6 +236,54 @@ class CPU:
 
                 # Increment SP
                 self.reg[7] += 1
+
+            # CMP
+            elif ir[0] == "10100111":
+                # Reset LGE flags??
+
+                # Get register addresses
+                reg_a = self.binary_string_to_decimal(ir[1])
+                reg_b = self.binary_string_to_decimal(ir[2])
+
+                # Call ALU MUL function
+                self.alu("CMP", reg_a,reg_b)
+
+            # JMP
+            elif ir[0] == "01010100":
+                # Convert register address
+                reg_address = self.binary_string_to_decimal(ir[1])
+
+                # Get new value
+                value = self.reg[reg_address]
+
+                # Set PC to that value
+                self.pc = value
+
+            # JEQ
+            elif ir[0] == "01010101":
+                # Check if `equal` flag is True
+                if self.fl[7] == 1:
+                    # Convert register address
+                    reg_address = self.binary_string_to_decimal(ir[1])
+
+                    # Get new value
+                    value = self.reg[reg_address]
+
+                    # Set PC to that value
+                    self.pc = value
+
+            # JNE
+            elif ir[0] == "01010110":
+                # Check if `equal` flag is clear
+                if self.fl[7] == 0:
+                    # Convert register address
+                    reg_address = self.binary_string_to_decimal(ir[1])
+
+                    # Get new value
+                    value = self.reg[reg_address]
+
+                    # Set PC to that value
+                    self.pc = value
 
             else:
                 print("INVALID COMMAND")
